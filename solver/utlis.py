@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from tensorflow.keras.models import load_model
+from keras.models import load_model
 
 
 # READ THE MODEL WEIGHTS
@@ -10,7 +10,7 @@ def initialize_prediction_model():
 
 
 # 1 - Preprocessing Image
-def process(img):
+def img_to_thr(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (5, 5), 1)
     threshold = cv2.adaptiveThreshold(blur, 255, 1, 1, 11, 2)
@@ -75,7 +75,7 @@ def get_prediction(boxes, model):
     return result
 
 
-# 6 -  TO DISPLAY THE SOLUTION ON THE IMAGE
+# display solution on puzzle
 def display_numbers(img, numbers, color=(0, 255, 0)):
     sec_w = int(img.shape[1]/9)
     sec_h = int(img.shape[0]/9)
@@ -86,7 +86,7 @@ def display_numbers(img, numbers, color=(0, 255, 0)):
     return img
 
 
-# 6 - DRAW GRID TO SEE THE WARP PERSPECTIVE EFFICIENCY
+# draw grid to more effectively see puzzle
 def draw_grid(img):
     sec_w = int(img.shape[1]/9)
     sec_h = int(img.shape[0]/9)
@@ -100,7 +100,7 @@ def draw_grid(img):
     return img
 
 
-# 6 - TO STACK ALL THE IMAGES IN ONE WINDOW
+# stack all images in one window
 def stack_images(img_array, scale):
     rows = len(img_array)
     cols = len(img_array[0])

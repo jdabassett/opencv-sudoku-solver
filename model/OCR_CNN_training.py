@@ -12,17 +12,17 @@ from sklearn.model_selection import train_test_split
 
 ##############################################################
 # global variables
-path = "../data/digits"
+dgt_pth = "../data/digits"
 test_ratio = 0.2
 validation_ratio = 0.2
 img_dim = (32, 32, 3)
 ##############################################################
 
 # declare variables
-digits_img = list()
-digits_num = list()
+dgt_img = list()
+dgt_num = list()
 
-my_list = os.listdir(path)
+my_list = os.listdir(dgt_pth)
 num_classes = len(my_list)
 
 # load, resize, and sort digit images into a list
