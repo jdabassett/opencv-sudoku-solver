@@ -1,64 +1,48 @@
 import cv2
-from keras.layers import Dense, Dropout, Flatten
-from keras.layers.convolutional import Conv2D, MaxPooling2D
+from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
-from keras.optimizers import Adam
+from keras.optimizers.legacy import Adam
 from keras.preprocessing.image import ImageDataGenerator
-from keras.utils.np_utils import to_categorical
-import matplotlib.pyplot as plt
+from keras.utils import to_categorical
+# import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pickle
 from sklearn.model_selection import train_test_split
 
 ##############################################################
 # global variables
-dgt_pth = "../data/digits"
-test_ratio = 0.2
-validation_ratio = 0.2
-img_dim = (32, 32, 3)
+digit_path = "../data/digits"  # path to digit directories
+test_ratio = 0.2  # test ratio
+valid_ratio = 0.2  # validation ratio
+img_dimen = (32, 32, 3)  # image dimensions
+batch_size = 50
+epochs = 10
+shuffle = True
 ##############################################################
 
 # declare variables
-dgt_img = list()
-dgt_num = list()
+digit_imgs = list()  # digit images
+digit_cat = list()  # digit categories
 
-my_list = os.listdir(dgt_pth)
-num_classes = len(my_list)
+digit_dir = os.listdir(digit_path)  # digit directories
+number_cat = len(digit_dir)  # number categories
 
 # load, resize, and sort digit images into a list
-for i in range(0, num_classes):
-    pic_list = os.listdir(path+"/"+str(i))
-    for pic_name in pic_list:
-        curr_img = cv2.imread(path+'/'+str(i)+'/'+pic_name)
-        curr_img = cv2.resize(curr_img, (img_dim[0], img_dim[1]))
-        digits_img.append(curr_img)
-        digits_num.append(i)
+for i in range(0, number_cat):
+    digit_picts = os.listdir(digit_path+"/"+str(i))  # digit pictures
+    for pict_name in digit_picts:  # picture name
+        img_curr = cv2.imread(digit_path+'/'+str(i)+'/' + pict_name)  # image current
+        img_curr = cv2.resize(img_curr, (img_dimen[0], img_dimen[1]))
+        digit_imgs.append(img_curr)
+        digit_cat.append(i)
 
 # convert list into numpy array
-digits_img = np.array(digits_img)
-digits_num = np.array(digits_num)
-
-# splitting data into training and testing
-x_train, x_test, y_train, y_test = train_test_split(digits_img, digits_num, test_size=test_ratio)
-x_train, x_validation, y_train, y_validation = train_test_split(x_train, y_train, test_size=validation_ratio)
-
-print(digits_img.shape)
-print(x_train.shape)
-print(x_validation.shape)
-
-num_samples = list()
-for i in range(0, num_classes):
-    num_samples.append(len(np.where(y_train==i)[0]))
-
-plt.figure(figsize=(10, 5))
-plt.title("Number of Images for each Digit")
-plt.bar(range(0, num_classes), num_samples)
-plt.xlabel("Digits")
-plt.ylabel("Number of Images")
-plt.show()
+digit_imgs = np.array(digit_imgs)
+digit_cat = np.array(digit_cat)
 
 
-# process images
+# convert all images into grayscale and equalize histogram
 def process_image(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img = cv2.equalizeHist(img)
@@ -66,57 +50,92 @@ def process_image(img):
     return img
 
 
-x_train = np.array(list(map(process_image, x_train)))
-x_test = np.array(list(map(process_image, x_test)))
-x_validation = np.array(list(map(process_image, x_validation)))
+# preprocess images
+digit_imgs = np.array(list(map(process_image, digit_imgs)))
+digit_imgs = digit_imgs.reshape(digit_imgs.shape[0], digit_imgs.shape[1], digit_imgs.shape[2], 1)
 
-# change shape before training
-x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], x_train.shape[2], 1)
-x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], x_test.shape[2], 1)
-x_validation = x_validation.reshape(x_validation.shape[0], x_validation.shape[1], x_validation.shape[2], 1)
+# covert categorical
+digit_cat = to_categorical(digit_cat, number_cat)
+
+# splitting data into training and testing
+x_train, x_test, y_train, y_test = train_test_split(digit_imgs, digit_cat, test_size=test_ratio)  # train and test datasets
+x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=valid_ratio)  # validation datasets
+
+
+# count the number of each type of image in training data
+# nmb_smp = list()
+# for i in range(0, nmb_cls):
+#     nmb_smp.append(len(np.where(y_trn == i)[0]))
+#
+# plt.figure(figsize=(10, 5))
+# plt.title("Number of Images for each Digit")
+# plt.bar(range(0, nmb_cls), nmb_smp)
+# plt.xlabel("Digits")
+# plt.ylabel("Number of Images")
+# plt.show()
 
 # add variation to images through random shift, zoom, shear, rotation
-data_gen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, zoom_range=0.2, shear_range=0.1, rotation_range=10)
-data_gen.fit(x_train)
-
-# convert categorical data into binary for training
-y_train = to_categorical(y_train, num_classes)
-y_test = to_categorical(y_test, num_classes)
-y_validation = to_categorical(y_validation, num_classes)
-
+data_gener = ImageDataGenerator(width_shift_range=0.1,
+                                height_shift_range=0.1,
+                                zoom_range=0.2,
+                                shear_range=0.1,
+                                rotation_range=10)
+data_gener.fit(x_train)
 
 # setup model
 def generate_model():
-    num_filters = 60
-    size_filter1 = (5, 5)
-    size_filter2 = (3, 3)
-    size_pool = (2, 2)
-    num_node = 500
+    number_flt = 60  # number of filters
+    size_flt1 = (5, 5)  # size filter 1
+    size_flt2 = (3, 3)  # size filter 2
+    size_pool = (2, 2)  # size of pool
+    number_nd1 = 500  # number of nodes 1
 
     model = Sequential()
-    model.add((Conv2D(num_filters,
-                      size_filter1,
-                      input_shape=(img_dim[0], img_dim[1], 1),
+    model.add((Conv2D(number_flt,
+                      size_flt1,
+                      input_shape=(img_dimen[0], img_dimen[1], 1),
                       activation='relu')))
-    model.add((Conv2D(num_filters,
-                      size_filter1,
+    model.add((Conv2D(number_flt,
+                      size_flt1,
                       activation='relu')))
     model.add(MaxPooling2D(pool_size=size_pool))
-    model.add((Conv2D(num_filters//2,
-                      size_filter2,
+    model.add((Conv2D(number_flt//2,
+                      size_flt2,
                       activation='relu')))
-    model.add((Conv2D(num_filters//2,
-                      size_filter2,
+    model.add((Conv2D(number_flt//2,
+                      size_flt2,
                       activation='relu')))
     model.add(MaxPooling2D(pool_size=size_pool))
     model.add(Dropout(0.5))
     model.add(Flatten())
-    model.add(Dense(num_node, activation='relu'))
+    model.add(Dense(number_nd1, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(num_node, activation='softmax'))
-    model.compile(Adam(lr=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.add(Dense(number_cat, activation='softmax'))
+    model.compile(Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
 
-model0 = generate_model()
-print(model0.summary())
+# create model
+model0 = generate_model()  # model variable
+
+# train model
+steps_per_epoch = x_train.shape[0]//50
+model_hst = model0.fit(data_gener.flow(x_train, y_train, batch_size=batch_size),
+                  epochs=epochs,
+                  steps_per_epoch=steps_per_epoch,
+                  validation_data=(x_valid, y_valid),
+                  shuffle=shuffle)
+
+
+# test model
+model_scr = model0.evaluate(x_test, y_test, verbose=0)  # model score
+print("Test Score", model_scr[0])
+print("Test Accuracy", model_scr[1])
+
+
+# export model
+model_out = open("model_trained2.p", "wb")  # model output
+pickle.dump(model0, model_out)
+model_out.close()
+
+
