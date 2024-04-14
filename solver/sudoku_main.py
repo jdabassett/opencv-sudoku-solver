@@ -5,7 +5,7 @@ from sudoku_solver import (
     Sudoku,
     convert_board,
     solve_board)
-from utlis import (
+from utilities import (
     biggest_contour,
     display_numbers,
     draw_grid,
@@ -22,7 +22,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 pth_img = "../data/unsolved/1.jpg"
 hgh_img = 450
 wdt_img = 450
-# model = initialize_prediction_model()
+model = initialize_prediction_model()
 ########################################################################
 
 print('Setting UP')

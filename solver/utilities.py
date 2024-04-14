@@ -1,20 +1,29 @@
 import cv2
 import numpy as np
-from keras.models import load_model
+import pickle
 
 
-# READ THE MODEL WEIGHTS
+# create model
 def initialize_prediction_model():
-    model = load_model('Resources/myModel.h5')
-    return model
+    with open("../model/model_trained_10_2.p", "rb") as file:
+        model0 = pickle.load(file)
+    return model0
 
 
-# 1 - Preprocessing Image
+# preprocessing Image
 def img_to_thr(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (5, 5), 1)
     threshold = cv2.adaptiveThreshold(blur, 255, 1, 1, 11, 2)
     return threshold
+
+
+# convert all images into grayscale and equalize histogram
+def img_to_equalized(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = cv2.equalizeHist(img)
+    img = img/255
+    return img
 
 
 # 3 - Reorder points for Warp Perspective
@@ -128,3 +137,8 @@ def stack_images(img_array, scale):
         # hor_con = np.concatenate(img_array)
         ver = hor
     return ver
+
+
+if __name__ == "__main__":
+    with open("../model/model_trained_10_2.p", "rb") as model_file:
+        model = pickle.load(model_file)

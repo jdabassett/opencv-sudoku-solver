@@ -2,6 +2,7 @@ import cv2
 from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 from keras.optimizers.legacy import Adam
+# from keras.optimizers import Adam
 from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import to_categorical
 # import matplotlib.pyplot as plt
@@ -10,6 +11,7 @@ import os
 import pickle
 from sklearn.model_selection import train_test_split
 
+
 ##############################################################
 # global variables
 digit_path = "../data/digits"  # path to digit directories
@@ -17,7 +19,7 @@ test_ratio = 0.2  # test ratio
 valid_ratio = 0.2  # validation ratio
 img_dimen = (32, 32, 3)  # image dimensions
 batch_size = 50
-epochs = 10
+epochs = 1
 shuffle = True
 ##############################################################
 
@@ -111,7 +113,8 @@ def generate_model():
     model.add(Dense(number_nd1, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(number_cat, activation='softmax'))
-    model.compile(Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+    # model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam')
     return model
 
 
@@ -134,7 +137,7 @@ print("Test Accuracy", model_scr[1])
 
 
 # export model
-model_out = open("model_trained2.p", "wb")  # model output
+model_out = open("model_trained_10_2.p", "wb")  # model output
 pickle.dump(model0, model_out)
 model_out.close()
 

@@ -168,20 +168,20 @@ def solve_board(board: List[List[str]]) -> List[List[str]]:
     return sudoku.solved_board
 
 
-if __name__ == "__main__":
-    num = 1000
-    df = pd.read_csv('../data/raw/sudoku.csv')
-    df = df.head(num)
-    df['raw_unsolved'] = df['quizzes'].apply(convert_board)
-    df['raw_solved'] = df['solutions'].apply(convert_board)
-    start_time = time.time()
-    df['solved'] = df['raw_unsolved'].apply(solve_board)
-    end_time = time.time()
-    elapsed = end_time - start_time
-    m_sec_per = round((elapsed/num)*1000, 0)
-    print(elapsed)
-    results = all(df['raw_solved'] == df['solved'])
-    print(results)
+# if __name__ == "__main__":
+#     num = 1000
+#     df = pd.read_csv('../data/raw/sudoku.csv')
+#     df = df.head(num)
+#     df['raw_unsolved'] = df['quizzes'].apply(convert_board)
+#     df['raw_solved'] = df['solutions'].apply(convert_board)
+#     start_time = time.time()
+#     df['solved'] = df['raw_unsolved'].apply(solve_board)
+#     end_time = time.time()
+#     elapsed = end_time - start_time
+#     m_sec_per = round((elapsed/num)*1000, 0)
+#     print(elapsed)
+#     results = all(df['raw_solved'] == df['solved'])
+#     print(results)
     # print(df['quizzes'][0])
     # print(df['raw_unsolved'][0])
     # print(df['raw_solved'][0])
