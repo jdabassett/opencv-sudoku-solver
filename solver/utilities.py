@@ -1,13 +1,15 @@
 import cv2
+from keras.models import load_model
+import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
 
 # create model
 def initialize_prediction_model():
-    with open("../model/model_trained_10_2.p", "rb") as file:
-        model0 = pickle.load(file)
-    return model0
+    new_model = load_model('../model/model_trained_10_1.keras')
+    # new_model.summary()
+    return new_model
 
 
 # preprocessing Image
@@ -67,21 +69,34 @@ def split_boxes(img):
 
 # 4 - GET PREDICTIONS ON ALL IMAGES
 def get_prediction(boxes, model):
-    result = []
-    for image in boxes:
+    result = [[] for _ in range(9)]
+    new_boxes = []
+    probabilities = []
+    for idx,image in enumerate(boxes):
         img = np.asarray(image)
-        img = img[4:img.shape[0] - 4, 4:img.shape[1]-4]
-        img = cv2.resize(img, (28, 28))
+        height, width = img.shape[0], img.shape[1]
+        h_ten, w_ten = height//10, width//10
+        img = img[h_ten:height - h_ten, w_ten:width-w_ten]
+        img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 3, 5)
+        img = cv2.resize(img, (32, 32))
         img = img / 255
-        img = img.reshape(1, 28, 28, 1)
-        predictions = model.predict(img)
-        class_index = model.predict_classes(img)
-        probability_value = np.amax(predictions)
-        if probability_value > 0.8:
-            result.append(class_index[0])
+        new_boxes.append(img)
+        img = img.reshape(1, 32, 32, 1)
+        pred = model.predict(img)
+        prob_idx = np.argmax(pred, axis=1)
+        prob_hgh = pred[0, prob_idx][0]
+        row = idx // 9
+
+        # print(idx, pred, prob_idx[0], prob_hgh)
+
+        if prob_hgh > 0.5:
+            result[row].append((prob_idx[0], round(prob_hgh, 1)))
+            # result[row].append(prob_idx[0])
+            probabilities.append(round(prob_hgh, 1))
         else:
-            result.append(0)
-    return result
+            result[row].append(0)
+    print(probabilities)
+    return result, new_boxes
 
 
 # display solution on puzzle
@@ -139,6 +154,16 @@ def stack_images(img_array, scale):
     return ver
 
 
+def plot_cells(cells):
+    plt.figure(figsize=(12, 12))
+
+    for i in range(0, 81):
+        plt.subplot(9, 9, i + 1)
+        # plt.axis('off')
+        plt.imshow(cells[i], cmap='gray')
+
+    plt.show()
+
+
 if __name__ == "__main__":
-    with open("../model/model_trained_10_2.p", "rb") as model_file:
-        model = pickle.load(model_file)
+    model0 = initialize_prediction_model()
