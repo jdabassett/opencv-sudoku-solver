@@ -152,7 +152,7 @@ class Sudoku:
             return None
 
 
-def convert_board(board: str) -> List[List[str]]:
+def convert_board(board: str) -> List[List[int]]:
     """Convert board from singe into nested list of integers"""
     ret_board = [[] for _ in range(9)]
     for idx, val in enumerate(board):

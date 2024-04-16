@@ -8,7 +8,6 @@ import pickle
 # create model
 def initialize_prediction_model():
     new_model = load_model('../model/model_trained_10_1.keras')
-    # new_model.summary()
     return new_model
 
 
@@ -69,15 +68,16 @@ def split_boxes(img):
 
 # 4 - GET PREDICTIONS ON ALL IMAGES
 def get_prediction(boxes, model):
-    result = [[] for _ in range(9)]
+    result_lst = [[] for _ in range(9)]
+    result_str =""
     new_boxes = []
-    probabilities = []
     for idx,image in enumerate(boxes):
         img = np.asarray(image)
         height, width = img.shape[0], img.shape[1]
-        h_ten, w_ten = height//10, width//10
+        h_ten, w_ten = height//7, width//7
         img = img[h_ten:height - h_ten, w_ten:width-w_ten]
-        img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 3, 5)
+        img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 5, 5)
+        # cv2.threshold(img, 20, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY)
         img = cv2.resize(img, (32, 32))
         img = img / 255
         new_boxes.append(img)
@@ -87,16 +87,14 @@ def get_prediction(boxes, model):
         prob_hgh = pred[0, prob_idx][0]
         row = idx // 9
 
-        # print(idx, pred, prob_idx[0], prob_hgh)
-
         if prob_hgh > 0.5:
-            result[row].append((prob_idx[0], round(prob_hgh, 1)))
-            # result[row].append(prob_idx[0])
-            probabilities.append(round(prob_hgh, 1))
+            # result[row].append((prob_idx[0], round(prob_hgh, 1)))
+            result_lst[row].append(prob_idx[0])
+            result_str += str(prob_idx[0])
         else:
-            result[row].append(0)
-    print(probabilities)
-    return result, new_boxes
+            result_lst[row].append(0)
+            result_str += "0"
+    return result_lst, result_str, new_boxes
 
 
 # display solution on puzzle
