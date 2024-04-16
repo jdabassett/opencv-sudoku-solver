@@ -32,13 +32,14 @@ digit_dir = os.listdir(digit_path)  # digit directories
 number_cat = len(digit_dir)  # number categories
 
 # load, resize, and sort digit images into a list
-for i in range(1, number_cat):
+for i in range(1, number_cat+1):
     digit_picts = os.listdir(digit_path+"/"+str(i))  # digit pictures
+    print(digit_path+"/"+str(i))
     for pict_name in digit_picts:  # picture name
         img_curr = cv2.imread(digit_path+'/'+str(i)+'/' + pict_name)  # image current
         img_curr = cv2.resize(img_curr, (img_dimen[0], img_dimen[1]))
         digit_imgs.append(img_curr)
-        digit_cat.append(i)
+        digit_cat.append(i-1)
 
 # convert list into numpy array
 digit_imgs = np.array(digit_imgs)
@@ -57,6 +58,7 @@ def add_circles(img):
         y = random.randint(1, img_dimen[1]-1)
         cv2.circle(temp, (x, y), r, 0, -1)
         number_blk -= 1
+    # white spots
     while number_wht > 0:
         r = random.randint(0,1)
         x = random.randint(1, img_dimen[0]-1)
@@ -106,6 +108,7 @@ def process_image(img):
 # preprocess images
 digit_imgs = np.array(list(map(process_image, digit_imgs)))
 
+# observe random digits
 plt.figure(figsize=(12,12))
 for idx in range(1,82):
     plt.axis('off')
@@ -114,11 +117,11 @@ for idx in range(1,82):
 plt.show()
 
 # digit_imgs = digit_imgs.reshape(digit_imgs.shape[0], digit_imgs.shape[1], digit_imgs.shape[2], 1)
-
-# covert categorical
+#
+# # covert categorical
 # digit_cat = to_categorical(digit_cat, number_cat)
-
-# splitting data into training and testing
+#
+# # splitting data into training and testing
 # x_train, x_test, y_train, y_test = train_test_split(digit_imgs, digit_cat, test_size=test_ratio)  # train and test datasets
 # x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=valid_ratio)  # validation datasets
 
@@ -136,11 +139,11 @@ plt.show()
 # plt.show()
 
 # add variation to images through random shift, zoom, shear, rotation
-data_gener = ImageDataGenerator(width_shift_range=0.1,
-                                height_shift_range=0.1,
-                                zoom_range=0.3,
-                                shear_range=0.2)
-data_gener.fit(x_train)
+# data_gener = ImageDataGenerator(width_shift_range=0.1,
+#                                 height_shift_range=0.2,
+#                                 zoom_range=0.3,
+#                                 shear_range=0.2)
+# data_gener.fit(x_train)
 
 # setup model
 # def generate_model():
@@ -173,27 +176,25 @@ data_gener.fit(x_train)
 #     model.add(Dense(number_cat, activation='softmax'))
 #     model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
 #     return model
-
-
-# create model
+#
+#
+# # create model
 # model0 = generate_model()  # model variable
-
-# train model
-# steps_per_epoch = x_train.shape[0]//50
+#
+# # train model
 # model_hst = model0.fit(data_gener.flow(x_train, y_train, batch_size=batch_size),
 #                   epochs=epochs,
-#                   steps_per_epoch=steps_per_epoch,
 #                   validation_data=(x_valid, y_valid),
 #                   shuffle=shuffle)
-
-
-# test model
+#
+#
+# # test model
 # model_scr = model0.evaluate(x_test, y_test, verbose=0)  # model score
 # print("Test Score", model_scr[0])
 # print("Test Accuracy", model_scr[1])
-
-
-# export model
-# model0.save('../model/model_trained_10_1.keras')
+#
+#
+# # export model
+# model0.save('../model/model_trained_10_5.keras')
 
 

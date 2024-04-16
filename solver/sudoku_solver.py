@@ -6,8 +6,8 @@ from typing import Dict, List, Set, Tuple
 
 
 class Sudoku:
-    full_str_set = set([i for i in range(0, 10)])
-    str_set = set([i for i in range(1, 10)])
+    full_set = set([i for i in range(0, 10)])
+    solved_set = set([i for i in range(1, 10)])
 
     @staticmethod
     def _is_solved(board: List[List[str]]) -> bool:
@@ -27,7 +27,7 @@ class Sudoku:
         for i in range(9):
             if i not in r or i not in c or i not in s:
                 return False
-            if r[i] != Sudoku.str_set or c[i] != Sudoku.str_set or s[i] != Sudoku.str_set:
+            if r[i] != Sudoku.solved_set or c[i] != Sudoku.solved_set or s[i] != Sudoku.solved_set:
                 return False
         return True
 
@@ -43,7 +43,7 @@ class Sudoku:
             if not isinstance(row, list) or len(row) != 9:
                 return False
             for value in row:
-                if not isinstance(value, int) or value not in Sudoku.full_str_set:
+                if not isinstance(value, int) or value not in Sudoku.full_set:
                     return False
 
         return True
@@ -85,7 +85,7 @@ class Sudoku:
         heap = []
         count = 0
         for i, j, k in empties:
-            possibilities = Sudoku.str_set - (rows[i] | cols[j] | squares[k])
+            possibilities = Sudoku.solved_set - (rows[i] | cols[j] | squares[k])
             if len(possibilities) == 1:
                 n = possibilities.pop()
                 rows[i].add(n)
@@ -113,7 +113,7 @@ class Sudoku:
                 heapq.heappush(heap, (count, len(possibilities), i, j, k))
                 continue
 
-            possibilities = Sudoku.str_set - (rows[i] | cols[j] | squares[k])
+            possibilities = Sudoku.solved_set - (rows[i] | cols[j] | squares[k])
 
             while not possibilities:
                 if not solution:

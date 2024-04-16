@@ -1,33 +1,34 @@
+import copy
 import cv2
-from keras.models import load_model
+from keras.models import load_model, Model
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
+from typing import List, Tuple, Dict, Any
 
 
 # create model
-def initialize_prediction_model():
-    new_model = load_model('../model/model_trained_10_1.keras')
+def initialize_prediction_model() -> Model:
+    new_model = load_model('../model/model_trained_10_3.keras')
     return new_model
 
 
 # preprocessing Image
-def img_to_thr(img):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (5, 5), 1)
-    threshold = cv2.adaptiveThreshold(blur, 255, 1, 1, 11, 2)
-    return threshold
+def img_to_thr(img: np.ndarray) -> np.ndarray:
+    temp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    temp = cv2.GaussianBlur(temp, (5, 5), 1)
+    temp = cv2.adaptiveThreshold(temp, 255, 1, 1, 11, 2)
+    return temp
 
 
 # convert all images into grayscale and equalize histogram
-def img_to_equalized(img):
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img = cv2.equalizeHist(img)
-    img = img/255
-    return img
+def img_to_equalized(img: np.ndarray) -> np.ndarray:
+    temp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    temp = cv2.equalizeHist(img)
+    temp = temp/255
+    return temp
 
 
-# 3 - Reorder points for Warp Perspective
+# reorder points for Warp Perspective
 def reorder(points):
     points = points.reshape((4, 2))
     points_new = np.zeros((4, 1, 2), dtype=np.int32)
@@ -40,8 +41,8 @@ def reorder(points):
     return points_new
 
 
-# 3 - FINDING THE BIGGEST CONTOUR ASSUMING THAT IS THE SUDOKU PUZZLE
-def biggest_contour(contours):
+# find biggest contour
+def biggest_contour(contours: List[np.ndarray]) -> np.ndarray:
     biggest = np.array([])
     max_area = 0
     for i in contours:
@@ -52,11 +53,11 @@ def biggest_contour(contours):
             if area > max_area and len(approx) == 4:
                 biggest = approx
                 max_area = area
-    return biggest, max_area
+    return biggest
 
 
-# 4 - TO SPLIT THE IMAGE INTO 81 DIFFERENT IMAGES
-def split_boxes(img):
+# split image into 81 cells
+def split_boxes(img: np.ndarray) -> List[np.ndarray]:
     rows = np.vsplit(img, 9)
     boxes = []
     for r in rows:
@@ -66,10 +67,9 @@ def split_boxes(img):
     return boxes
 
 
-# 4 - GET PREDICTIONS ON ALL IMAGES
-def get_prediction(boxes, model):
+# predict value of each cell
+def get_prediction(boxes: List[np.ndarray], model: Model):
     result_lst = [[] for _ in range(9)]
-    result_str =""
     new_boxes = []
     for idx,image in enumerate(boxes):
         img = np.asarray(image)
@@ -77,7 +77,6 @@ def get_prediction(boxes, model):
         h_ten, w_ten = height//7, width//7
         img = img[h_ten:height - h_ten, w_ten:width-w_ten]
         img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 5, 5)
-        # cv2.threshold(img, 20, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY)
         img = cv2.resize(img, (32, 32))
         img = img / 255
         new_boxes.append(img)
@@ -86,44 +85,29 @@ def get_prediction(boxes, model):
         prob_idx = np.argmax(pred, axis=1)
         prob_hgh = pred[0, prob_idx][0]
         row = idx // 9
-
-        if prob_hgh > 0.5:
-            # result[row].append((prob_idx[0], round(prob_hgh, 1)))
-            result_lst[row].append(prob_idx[0])
-            result_str += str(prob_idx[0])
+        if prob_hgh > 0.8:
+            result_lst[row].append(int(prob_idx[0]+1))
         else:
             result_lst[row].append(0)
-            result_str += "0"
-    return result_lst, result_str, new_boxes
+    return result_lst, new_boxes
 
 
 # display solution on puzzle
-def display_numbers(img, numbers, color=(0, 255, 0)):
-    sec_w = int(img.shape[1]/9)
-    sec_h = int(img.shape[0]/9)
+def display_numbers(img: np.ndarray, puzzle: List[List[int]] , solution: List[List[int]], color: Tuple[int] = (0, 255, 0)) -> np.ndarray:
+    temp = copy.deepcopy(img)
+    width = int(temp.shape[1]/9)
+    height = int(temp.shape[0]/9)
     for x in range(0, 9):
         for y in range(0, 9):
-            if numbers[(y*9)+x] != 0:
-                cv2.putText(img, str(numbers[(y*9)+x]), (x*sec_w+int(sec_w/2)-10, int((y+0.8)*sec_h)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, color, 2, cv2.LINE_AA)
-    return img
-
-
-# draw grid to more effectively see puzzle
-def draw_grid(img):
-    sec_w = int(img.shape[1]/9)
-    sec_h = int(img.shape[0]/9)
-    for i in range(0, 9):
-        pt1 = (0, sec_h*i)
-        pt2 = (img.shape[1], sec_h*i)
-        pt3 = (sec_w * i, 0)
-        pt4 = (sec_w*i, img.shape[0])
-        cv2.line(img, pt1, pt2, (255, 255, 0), 2)
-        cv2.line(img, pt3, pt4, (255, 255, 0), 2)
-    return img
+            prev = puzzle[y][x]
+            if prev == 0:
+                val = str(solution[y][x])
+                cv2.putText(temp, val, (x*width+int(width/2)-10, int((y+0.8)*height)), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, color, 2, cv2.LINE_AA)
+    return temp
 
 
 # stack all images in one window
-def stack_images(img_array, scale):
+def stack_images(img_array: List[np.ndarray], scale: int):
     rows = len(img_array)
     cols = len(img_array[0])
     rows_available = isinstance(img_array[0], list)
@@ -141,27 +125,25 @@ def stack_images(img_array, scale):
             hor[x] = np.hstack(img_array[x])
             hor_con[x] = np.concatenate(img_array[x])
         ver = np.vstack(hor)
-        # ver_con = np.concatenate(hor)
     else:
         for x in range(0, rows):
             img_array[x] = cv2.resize(img_array[x], (0, 0), None, scale, scale)
             if len(img_array[x].shape) == 2: img_array[x] = cv2.cvtColor(img_array[x], cv2.COLOR_GRAY2BGR)
         hor = np.hstack(img_array)
-        # hor_con = np.concatenate(img_array)
         ver = hor
     return ver
 
 
-def plot_cells(cells):
+def plot_cells(cells: List[np.ndarray]) -> None:
     plt.figure(figsize=(12, 12))
 
     for i in range(0, 81):
         plt.subplot(9, 9, i + 1)
-        # plt.axis('off')
+        plt.axis('off')
         plt.imshow(cells[i], cmap='gray')
 
     plt.show()
 
 
-if __name__ == "__main__":
-    model0 = initialize_prediction_model()
+# if __name__ == "__main__":
+#     model0 = initialize_prediction_model()
